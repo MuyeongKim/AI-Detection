@@ -1,0 +1,85 @@
+import cv2
+from djitellopy import Tello
+import time
+
+def is_chair_in_frame(frame):
+    # 흑백 변환
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # 픽셀의 평균값을 계산
+    mean_pixel_value = gray.mean()
+    # 일정 값 이하로 검정색이 많은지 판단
+    return mean_pixel_value < 50  # 임계값은 필요에 따라 조정
+
+def main():
+    # Tello 객체 생성
+    tello = Tello()
+
+    # Tello와 연결
+    tello.connect()
+    
+    # 배터리 상태 확인
+    print(f"Battery: {tello.get_battery()}%")
+
+    # 비디오 스트리밍 시작
+    tello.streamon()
+
+    # 이륙
+    tello.takeoff()
+    time.sleep(2)  # 안정적인 이륙을 위해 대기
+
+    # 의자까지 전진
+    while True:
+        tello.move_forward(20)  # 일정 거리만큼 전진
+        time.sleep(1)
+        
+        frame = tello.get_frame_read().frame
+        
+        # 의자 인식 확인
+        if is_chair_in_frame(frame):
+            tello.stop()  # 드론 멈추기
+            break
+
+        cv2.imshow('Tello Chair Detection', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    # 의자를 우회하는 경로 비행
+    # 왼쪽으로 60cm 이동
+    tello.move_left(60)
+    time.sleep(1)
+
+    # 앞으로 1m 이동
+    tello.move_forward(100)
+    time.sleep(1)
+
+    # 오른쪽으로 60cm 이동
+    tello.move_right(60)
+    time.sleep(1)
+
+    # 하단 비전 센서를 활용하여 의자 위에 있는지 확인하며 후진
+    while True:
+        tello.move_back(20)
+        time.sleep(1)
+        
+        # 비전 센서를 활용하여 높이 차 확인
+        height = tello.get_height()
+        print(f"Current height: {height}")
+
+        # 임의의 높이 차이 설정 (의자에 도달했다고 판단되는 높이)
+        if height < 50:  # 높이가 50cm 이하로 내려가면 착륙
+            break
+
+    # 착륙
+    tello.land()
+
+    # 비디오 스트리밍 종료
+    tello.streamoff()
+
+    # Tello와 연결 종료
+    tello.end()
+
+    # OpenCV 창 닫기
+    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    main()
