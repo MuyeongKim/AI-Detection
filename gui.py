@@ -15,8 +15,9 @@ class gui_MainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.pushButton_close.clicked.connect(self.exit_application) # 종료 버튼 메소드 연결
         self.pushButton_search.clicked.connect(self.browse_files)  # 검색 버튼에 메소드 연결
+        self.comboBox_yolo.currentIndexChanged.connect(self.update_yolo) # 욜로버젼 선택
         self.comboBox_data.currentIndexChanged.connect(self.update_datasize) # 데이터사이즈 선택
-        self.comboBox_source.currentIndexChanged.connect(self.update_source) #영t상소스 선택
+        self.comboBox_source.currentIndexChanged.connect(self.update_source) #영상소스 선택
         self.pushButton_enter.clicked.connect(self.submit)  # 검색 버튼에 메소드 연결
         self.lineEdit_juso.textChanged.connect(self.update_juso)  # lineEdit_juso의 textChanged 신호에 함수를 연결
         self.comboBox_percentage.currentIndexChanged.connect(self.option_percentage) # 옵션 임계값 선택
@@ -26,10 +27,10 @@ class gui_MainWindow(QMainWindow, Ui_MainWindow):
         # 초기화
         # 사용자 입력 주소를 저장할 변수
         self.juso = None
-        self.percentage = None
-        self.device = None
-        self.imgsz = None
-        self.buffer = None
+        self.percentage = 0.3
+        self.device = 'cpu'
+        self.imgsz = 1920
+        self.buffer = True
     
     def exit_application(self, *args):
         # 프로그램 종료 확인 및 종료 처리
@@ -44,12 +45,21 @@ class gui_MainWindow(QMainWindow, Ui_MainWindow):
             self.source = selection
         print(self.source)
         
+    def update_yolo(self, index):
+        selection = self.comboBox_yolo.itemText(index)
+        if selection == "선택하세요":
+            return ""
+        else:
+            yolo_dict = {'Yolo V10' : 'yolov10', 'Yolo V8' : 'yolov8'}
+            self.yolo = yolo_dict[selection]
+        print(self.yolo)
+
     def update_datasize(self, index):
         selection = self.comboBox_data.itemText(index)
         if selection == "선택하세요":
             return ""
         else:
-            size_dict = {'최대' : 'yolov8x.pt', '대': 'yolov8l.pt', '중': 'yolov8m.pt', '소': 'yolov8s.pt', '최소': 'yolov8n.pt'}
+            size_dict = {'최대' : f'{self.yolo}x.pt', '대': f'{self.yolo}l.pt', '중': f'{self.yolo}m.pt', '소': f'{self.yolo}s.pt', '최소': f'{self.yolo}n.pt'}
             self.datasize = size_dict[selection]   
         print(self.datasize)            
 
@@ -167,7 +177,7 @@ class gui_MainWindow(QMainWindow, Ui_MainWindow):
         end_time = time.time()  # 종료 시간 기록
         execution_time = end_time - start_time  # 실행 시간 계산
         print(f"실행 시간: {execution_time} 초")
-        self.juso = None
+        
         
         
     
